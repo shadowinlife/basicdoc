@@ -58,18 +58,34 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka-server:9092 --describe --g
 
 * 由于kafka的备份机制, 可以认为一个partition是由一个leader parition(主队列) 和 N 个 in-sync replica parition (ISR从队列)组成的, 在写入过程中. producer寻找到leader parition后会直接向它所在的broker机器写入.
 
-* 写入时根据ack的设置来保证数据一致性符合预期. act=0情况下producer不会等borker server回复.  act=1情况下, procuer会等borker server完成leader partition写. act=all情况下, producer会等borker server告诉它leader parition和ISR都写成功了. 这个默认是1
+* 写入时根据ack的设置来保证数据一致性符合预期. act=0情况下producer不会等borker server回复.  act=1情况下, procuer会
+
+等borker server完成leader partition写. act=all情况下, producer会需要borker server告诉它leader parition和ISR都写成功了. 这个默认是1
+
+> https://blog.csdn.net/szwandcj/article/details/76796459
+https://blog.csdn.net/szwandcj/article/details/76796492?utm_source=blogxgwz2
+https://blog.csdn.net/szwandcj/article/details/77460939?utm_source=blogxgwz0
+
 
 ## Consumer
 * Consumer从broker中选择topic pull 数据过来, 每次尽可能的使用batch操作多拉一些数据, 同时在没有数据的时候, kakfa consumer支持 long polling操作等待新的数据到来
 
 * Consumer需要面对两个问题, 一个是如何管理当前的读进度, 也就是offset. 另外一个是在parition失效时, 如何fail-over. 这两个问题都需要单独来讲解
 
-
+## 底层存储机制
+>老版本的存储机制: https://yq.aliyun.com/ziliao/65771
 
 # 4. Kafka的offset管理
 
 # 5. Kafka的Replication机制
+
+## 高可用(HA)的实现
+Replication是用多备份来保证数据的安全性, HA的核心在写入时保证多个备份一致, 以及灾后保证fail-over. 
+Kafka是采用一个leader后面多个ISR跟随的模式, 当leader失效后需要选举出一个新的leader, 它用的核心协议
+>There are a rich variety of algorithms in this family including ZooKeeper's Zab, Raft, and Viewstamped Replication. The most similar academic publication we are aware of to Kafka's actual implementation is PacificA from Microsoft.
+https://www.microsoft.com/en-us/research/publication/pacifica-replication-in-log-based-distributed-storage-systems/?from=http%3A%2F%2Fresearch.microsoft.com%2Fapps%2Fpubs%2Fdefault.aspx%3Fid%3D66814
+
+## 
 
 # 6. Kafka的扩容
 
