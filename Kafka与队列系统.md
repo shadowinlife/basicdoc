@@ -123,3 +123,4 @@ https://www.microsoft.com/en-us/research/publication/pacifica-replication-in-log
 
 可以手动触发rebalance, 把一部分topic的parition放到这个新集群上去, 具体可以在命令工具中查找到.
 
+# 7. Kafka的内存管理
