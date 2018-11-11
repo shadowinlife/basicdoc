@@ -428,4 +428,7 @@ private val unrollMemoryThreshold: Long =
     conf.getLong("spark.storage.unrollMemoryThreshold", 1024 * 1024)
 def freeMemory: Long = maxMemory - currentMemory
 ```
+![初始化图](./spark
+-MemoryStore.png)
+
 ### 4.5.2 占座机制
