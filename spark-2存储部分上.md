@@ -430,7 +430,7 @@ private val unrollMemoryThreshold: Long =
     conf.getLong("spark.storage.unrollMemoryThreshold", 1024 * 1024)
 def freeMemory: Long = maxMemory - currentMemory
 ```
-![初始化图](https://github.com/shadowinlife/basicdoc/images/spark-MemoryStore.png)
+![初始化图](https://github.com/shadowinlife/basicdoc/blob/master/images/spark-MemoryStore.png)
 
 ### 4.5.2 预分配机制机制
 spark在使用内存的时候会尝试预分配内存块给某个线程, 如果分配成果, 则留下一个标记为代表这一块已经被预定了.如果失败则启动各种回收机制榨取系统内存, 直到完全失败抛出内存不足的错误. 由Driver节点选另外一个worker来存这些Block
