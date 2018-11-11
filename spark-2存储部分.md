@@ -1,5 +1,7 @@
 # 1.spark是如何启动blockmanager的
 
+所有的RDD底层是一系列的Block, 以及一个DAG图, 描述了如何把这些Block计算成新的Block最后返回给Driver. 这一部分讲解Block的存储和管理.
+
 ```scala
 /** 
 初始化一个blocktransferservice, 这里使用netty来做异步服务.
@@ -123,15 +125,6 @@ abstract class BlockTransferService extends ShuffleClient with Closeable with Lo
     Await.result(uploadBlock(hostname, port, execId, blockId, blockData, level), Duration.Inf)
   }
 }
-
-```
-这里用到了两个外部知识, 一个是Java的NewIO
->http://tutorials.jenkov.com/java-nio/index.html\
-In the standard IO API you work with byte streams and character streams. In NIO you work with channels and buffers. Data is always read from a channel into a buffer, or written from a buffer to a channel.
-
-第二个是Netty
->https://netty.io/
-可以理解成Java NIO的event-driver模型, 对标Python的Gevent-libuv
 
 # 3. BlockManagerMaster
 
@@ -315,6 +308,7 @@ BlockManagerMaster在HighLevel借助Akka实现了一个通信的抽象, 让各�
 ```
 
 # 4. BlockManager概要
+BlockManager聚焦在如何管理Executor本地的Block们, 实现底层的数据读取,下刷, 删除, 查询
 
 ## 4.1 BlockManagerId
 用来注册一个唯一的BlockManager
@@ -414,7 +408,7 @@ private[spark] abstract class BlockStore(val blockManager: BlockManager) extends
 ```
 
 ## 4.5 MemoryStore的机制
-基本的组成
+### 4.5.1 基本的组成
 ```scala
   private[spark] class MemoryStore(blockManager: BlockManager, maxMemory: Long)
     extends BlockStore(blockManager) {
@@ -434,3 +428,4 @@ private val unrollMemoryThreshold: Long =
     conf.getLong("spark.storage.unrollMemoryThreshold", 1024 * 1024)
 def freeMemory: Long = maxMemory - currentMemory
 ```
+### 4.5.2 占座机制

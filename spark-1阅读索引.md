@@ -5,10 +5,9 @@ Spark核心的三块分别是
 * **JobScheduler**任务调度. 任务调度部分本质上是对RDD进行操作, Master通过对RDD的操作进行计算生成DAG图, 然后把DAG图切分成Stage, 每个Stage里有多个JOB, 这些JOB分发给worker去工作
 
 >http://spark.apache.org/docs/latest/index.html\
-这个文档几乎包含了所有Spark的方方面面, 用spark不是问题, 后续内容是对spark源码和实现的概要解读. \
-本文档主要针对1.6.0版本的spark. 这个时候spark是基于akka的actor模型进行通信, 利用Netty实现worker与woker之间的数据块交换. \
-Spark 2.x版本后这两个方面都做了优化, 使用Berkeley自己的模块替换.
 
+
+# SPARK启动
 ```scala
 class SparkEnv (
     val executorId: String,
@@ -42,10 +41,24 @@ class SparkEnv (
 * metricssystem 统计服务, 和webui相关
 * memoryManager 存储相关
 
+# 阅读后续内容需要的前置知识
+* 后续阅读针对有一定的spark基础的, 分析源码, 对spark的基本概念不了解需要仔细阅读官方文档. 按照官方文档跑通**所有**的官方自带例子.
 
-后续阅读针对有一定的spark基础的, 分析源码, 对spark的基本概念不了解需要仔细阅读官方文档. 按照官方文档跑通**所有**的官方自带例子.建议在StandAlone模式下跑, 单机的话就跑一个Master一个Worker的StandAlone模式, 以增项对Akka和MR的理解
+* 在StandAlone模式下跑, 单机的话就跑一个Master一个Worker的StandAlone模式, 以增项对Akka和MR1.0的理解
 
-Spark1.6使用scala2.10编译, 支持MR1.0标准. 因为开发时还有很多公司停留在Hadoop1.x上, 所以选择了老的MR标准. 最新版本的Spark2.x编译时默认需要指定版本是Hadoop2.6.0
+* 需要阅读Hadoop2.6的一些文档, 主要是HDFS的基本使用, Yarn可以忽略.
+
+* Spark最初的资源管理框架选择是Mesos, 在1.6.0以下版本选择Mesos可以弹性化的回收内存给同节点的其它executor使用.如果有能力, 最好了解以下Mesos的设计目标, 以及它和Yarn的区别.
+
+* Netty和Event-Drvier模型 https://netty.io/wiki/user-guide-for-4.x.html\
+spark主要使用Netty来实现worker和worker之间的数据块传输
+
+* JavaNIO http://tutorials.jenkov.com/java-nio/index.html\
+spark使用NIO一系列API来把数据刷到内存或者远端的机器上
+
+* Akka和actor模型 https://akka.io/docs/\
+Spark使用Akka来管理Driver和Executor, 实现运行时的通信, 维护一个Master-Slaver的拓扑结构分布式执行DAG任务
+
 
 
 
