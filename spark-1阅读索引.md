@@ -48,7 +48,7 @@ class SparkEnv (
 
 * 需要阅读Hadoop2.6的一些文档, 主要是HDFS的基本使用, Yarn可以忽略.
 
-* Spark最初的资源管理框架选择是Mesos, 在1.6.0以下版本选择Mesos可以弹性化的回收内存给同节点的其它executor使用.如果有能力, 最好了解以下Mesos的设计目标, 以及它和Yarn的区别.
+* Spark最初的资源管理框架选择是Mesos, 在1.6.0以下版本选择Mesos可以弹性化的回收内存给同节点的其它executor使用.如果有能力, 最好了解以下Mesos的设计目标, 以及它和Yarn的区别. **实际上不管使用哪个Spark版本, Mesos上支持的高级特性总比Yarn多** Mesos和Spark都是伯克利的项目.
 
 * Netty和Event-Drvier模型 https://netty.io/wiki/user-guide-for-4.x.html\
 spark主要使用Netty来实现worker和worker之间的数据块传输

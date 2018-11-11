@@ -308,7 +308,11 @@ BlockManagerMaster在HighLevel借助Akka实现了一个通信的抽象, 让各�
 ```
 
 # 4. BlockManager概要
-BlockManager聚焦在如何管理Executor本地的Block们, 实现底层的数据读取,下刷, 删除, 查询
+BlockManager聚焦在如何管理Executor本地的Block们, 实现底层的数据读取,下刷, 删除, 查询.
+
+BlocakManagerMasterEndpoint是在sparkenv中初始化的, 在启动spark时启动, 启动在Driver节点上.
+
+BlockManagerSlaverEndpoint是在BlockManager中初始化的, 初始化在Executor的启动过程中.
 
 ## 4.1 BlockManagerId
 用来注册一个唯一的BlockManager
@@ -352,8 +356,6 @@ class BlockManagerId private (
   // 管理放在磁盘里的block管理器
   private[spark] val diskStore = new DiskStore(this, diskBlockManager)
 
-  // 这个我没有读, 应该是放在Tachyon里的store管理器. 因为Tachyon到2.4.0都是experience的特性, 而且Tachyon本质上不存在了, 现在的项目是Alluxio. 这里
-  private[spark] lazy val externalBlockStore: ExternalBlockStore 
 ```
 
 ## 4.4 BlockStore们都干了什么
@@ -361,7 +363,7 @@ class BlockManagerId private (
 
 这里涉及到三种子类,  分别是MemoryStore, DiskStore, TachyonStore.
 
-其中MemoryStore的实现比较特别, 它采用了预申请的**占座**机制. 这个单独拿出来讲. 其它两种就是把字节流写入到文件系统的文件上, 文件名就是BlockId, 然后维护一个BlockId到文件系统路径的映射表而已.
+其中MemoryStore的实现比较特别, 它采用了预申请的**预分配**机制. 这个单独拿出来讲. 其它两种就是把字节流写入到文件系统的文件上, 文件名就是BlockId, 然后维护一个BlockId到文件系统路径的映射表而已.
 ```scala
 private[spark] abstract class BlockStore(val blockManager: BlockManager) extends Logging {
 
@@ -428,7 +430,31 @@ private val unrollMemoryThreshold: Long =
     conf.getLong("spark.storage.unrollMemoryThreshold", 1024 * 1024)
 def freeMemory: Long = maxMemory - currentMemory
 ```
-![初始化图](./spark
--MemoryStore.png)
+![初始化图](https://github.com/shadowinlife/basicdoc/images/spark-MemoryStore.png)
 
-### 4.5.2 占座机制
+### 4.5.2 预分配机制机制
+spark在使用内存的时候会尝试预分配内存块给某个线程, 如果分配成果, 则留下一个标记为代表这一块已经被预定了.如果失败则启动各种回收机制榨取系统内存, 直到完全失败抛出内存不足的错误. 由Driver节点选另外一个worker来存这些Block
+```scala
+  // A mapping from taskAttemptId to amount of memory used for unrolling a block (in bytes)
+  // All accesses of this map are assumed to have manually synchronized on `memoryManager`
+
+  // 第一个Long是线程的id, 第二个long是这个线程当前占用了多少内存, 以bytes为单位. 这个结构用来. 这里记录了多少内存已经被线程展开了, 也就是预分配了.
+  private val unrollMemoryMap = mutable.HashMap[Long, Long]()
+  
+  
+  // Same as `unrollMemoryMap`, but for pending unroll memory as defined below.
+  // Pending unroll memory refers to the intermediate memory occupied by a task
+  // after the unroll but before the actual putting of the block in the cache.
+  // This chunk of memory is expected to be released *as soon as* we finish
+  // caching the corresponding block as opposed to until after the task finishes.
+  // This is only used if a block is successfully unrolled in its entirety in
+  // memory (SPARK-4777).
+  private val pendingUnrollMemoryMap = mutable.HashMap[Long, Long]()
+
+  // Initial memory to request before unrolling any block
+  private val unrollMemoryThreshold: Long =
+    conf.getLong("spark.storage.unrollMemoryThreshold", 1024 * 1024)
+
+  /** Total amount of memory available for storage, in bytes. */
+  private def maxMemory: Long = memoryManager.maxStorageMemory
+```
